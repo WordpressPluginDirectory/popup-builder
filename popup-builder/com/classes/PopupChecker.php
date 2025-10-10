@@ -453,7 +453,14 @@ class PopupChecker
 			}
 		}
 		else if ($targetData['param'] == 'page_template' && !empty($targetData['value'])) {
-			$currentPageTemplate = basename(get_page_template());
+			
+			 $currentPageTemplate = get_page_template_slug();
+		    // Fallback to default page template
+		    if ( empty( $currentPageTemplate ) ) {
+		        $currentPageTemplate = 'page.php';
+		    } else {
+		        $currentPageTemplate = basename( $currentPageTemplate );
+		    }		
 			if (in_array($currentPageTemplate, $targetData['value'])) {
 				$isSatisfy = true;
 			}
@@ -476,7 +483,7 @@ class PopupChecker
 			}
 		}
 
-		if (!$isSatisfy && do_action('isAllowedForTarget', $targetData, $post)) {
+		if (!$isSatisfy && apply_filters('isAllowedForTarget', false, $targetData, $post) ) {
 			$isSatisfy = true;
 		}
 

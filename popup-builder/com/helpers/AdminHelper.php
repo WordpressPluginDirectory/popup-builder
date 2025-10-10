@@ -427,7 +427,7 @@ class AdminHelper
 	 *
 	 * @return string $attrStr
 	 */
-	public static function createAttrs($attrs)
+	public static function createAttrs($attrs, $allowed_attributes = false)
 	{
 		$attrStr = '';
 
@@ -436,10 +436,21 @@ class AdminHelper
 		}
 
 		foreach ($attrs as $attrKey => $attrValue) {
-			$attrStr .= $attrKey.'="'.$attrValue.'" ';
+			if( $allowed_attributes !== false)
+			{
+				//Check Whitelist Allowed Attributes
+				if( !in_array( $attrKey, $allowed_attributes ) )
+				{
+					continue;
+				}
+			}
+			$attrStr .= sprintf('%s="%s" ',
+	            esc_attr($attrKey),
+	            esc_attr($attrValue)
+        	);
 		}
 
-		return $attrStr;
+		return trim($attrStr);
 	}
 
 	public static function getFormattedDate($date)
@@ -649,6 +660,9 @@ class AdminHelper
 
 		//Check if opacity is set(rgba or rgb)
 		if ($opacity !== false) {
+			
+			$opacity = floatval($opacity); 
+
 			if (abs($opacity) > 1) {
 				$opacity = 1.0;
 			}
@@ -829,7 +843,9 @@ class AdminHelper
 		$currentPostType = '';
 
 		if (is_object($post)) {
-			$currentPostType = $post->post_type;
+			if ( isset( $post->post_type ) ) {
+        		$currentPostType = $post->post_type;
+        	}
 		}
 
 		// in some themes global $post returns null
