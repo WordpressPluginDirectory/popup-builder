@@ -23,7 +23,11 @@ class Installer
 	{
 		$tables = array();
 		global $SGPB_POPUP_TYPES;
-		$popupTypes = is_array($SGPB_POPUP_TYPES) && isset($SGPB_POPUP_TYPES['typeName']) ? $SGPB_POPUP_TYPES['typeName'] : null;
+
+		$popupTypes = null;
+		if (!empty($SGPB_POPUP_TYPES) && is_array($SGPB_POPUP_TYPES)) {
+		    $popupTypes = isset($SGPB_POPUP_TYPES['typeName']) ? $SGPB_POPUP_TYPES['typeName'] : null;
+		}
 
 		if (empty($popupTypes)) {
 			return $tables;

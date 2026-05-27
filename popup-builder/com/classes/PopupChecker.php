@@ -615,22 +615,177 @@ class PopupChecker
 		return $equalStatus;
 	}
 
+	/**
+	 * Whether WPML (SitePress) is active.
+	 *
+	 * @return bool
+	 */
+	public static function isWpmlActive()
+	{
+		return defined('ICL_SITEPRESS_VERSION')
+			|| defined('ICL_PLUGIN_PATH')
+			|| function_exists('wpml_get_current_language')
+			|| class_exists('\SitePress', false);
+	}
+
+	/**
+	 * WPML: language code assigned to a post (popup or page).
+	 * Uses element API first — wpml_get_language_information() often fails for CPT popupbuilder.
+	 *
+	 * @param int $postId Post ID.
+	 * @return string Language code (e.g. fr, en) or empty if unknown / WPML inactive.
+	 */
+	public static function getWpmlLanguageCodeForPost($postId)
+	{
+		$postId = (int) $postId;
+		if ($postId <= 0 || !self::isWpmlActive()) {
+			return '';
+		}
+
+		$postType = get_post_type($postId);
+		if (empty($postType)) {
+			return '';
+		}
+		$elementType = 'post_' . $postType;
+		$lang = apply_filters('wpml_element_language_code', null, array(
+			'element_id'   => $postId,
+			'element_type' => $elementType,
+		));
+		if (!empty($lang) && is_string($lang)) {
+			return $lang;
+		}
+
+		if (function_exists('wpml_get_language_information')) {
+			$info = wpml_get_language_information($postId);
+			if (!is_wp_error($info) && !empty($info['language_code'])) {
+				return $info['language_code'];
+			}
+		}
+
+		$details = apply_filters('wpml_post_language_details', null, $postId);
+		if (is_array($details) && !empty($details['language_code'])) {
+			return $details['language_code'];
+		}
+
+		return '';
+	}
+
+	/**
+	 * WPML: active language for the current request (domains, directories, default URL).
+	 *
+	 * @return string Language code or empty.
+	 */
+	public static function getWpmlCurrentRequestLanguageCode()
+	{
+		if (!self::isWpmlActive()) {
+			return '';
+		}
+
+		if (function_exists('wpml_get_current_language')) {
+			$lang = wpml_get_current_language();
+			if (!empty($lang) && is_string($lang)) {
+				return $lang;
+			}
+		}
+
+		global $sitepress;
+		if (is_object($sitepress) && method_exists($sitepress, 'get_current_language')) {
+			$lang = $sitepress->get_current_language();
+			if (!empty($lang) && is_string($lang)) {
+				return $lang;
+			}
+		}
+
+		$lang = apply_filters('wpml_current_language', null);
+		if (!empty($lang) && is_string($lang)) {
+			return $lang;
+		}
+
+		global $post;
+		if (!empty($post) && !empty($post->ID)) {
+			return self::getWpmlLanguageCodeForPost($post->ID);
+		}
+
+		return '';
+	}
+
+	/**
+	 * When sgpb-icl_post_language is not set, match popup visibility to the popup post's WPML language
+	 * so only the FR popup shows on FR pages and the EN popup on EN pages.
+	 *
+	 * @param int $popupPostId Popup post ID.
+	 * @return bool True = allow load, false = block.
+	 */
+	public static function shouldLoadPopupForWpmlAutoLanguage($popupPostId)
+	{
+		if (!self::isWpmlActive()) {
+			return true;
+		}
+		$popupLang = self::getWpmlLanguageCodeForPost($popupPostId);
+		if ($popupLang === '') {
+			if (apply_filters('sgpb_wpml_strict_popup_language', false, $popupPostId)) {
+				return false;
+			}
+			return true;
+		}
+		$currentLang = self::getWpmlCurrentRequestLanguageCode();
+		if ($currentLang === '' || $currentLang === null) {
+			return true;
+		}
+
+		return (strtolower($popupLang) === strtolower($currentLang));
+	}
+
+	/**
+	 * Single gate for WPML vs popup (explicit icl option or auto match by post language).
+	 *
+	 * @param int   $popupPostId   Popup post ID.
+	 * @param array $popupOptions  Popup options (meta).
+	 * @return bool True = allow load.
+	 */
+	public static function wpmlAllowsPopupFrontendLoad($popupPostId, $popupOptions, $filterArgs = null)
+	{
+		if (!self::isWpmlActive()) {
+			return true;
+		}
+		$popupPostId = (int) $popupPostId;
+		if (!empty($popupOptions['sgpb-icl_post_language'])) {
+			return self::checkLanguage($popupOptions['sgpb-icl_post_language']);
+		}
+		$args = is_array($filterArgs) ? $filterArgs : array(
+			'id'            => $popupPostId,
+			'popupOptions'  => $popupOptions,
+		);
+		if (!apply_filters('sgpb_enable_wpml_auto_popup_language_match', true, $args)) {
+			return true;
+		}
+
+		return self::shouldLoadPopupForWpmlAutoLanguage($popupPostId);
+	}
+
 	public static function checkLanguage($popupLanguage = '')
 	{
 		global $post;
 
-		$postId = $post->ID;
-		if (!function_exists('wpml_get_language_information')) {
+		if (!self::isWpmlActive()) {
 			return true;
 		}
-		$postLanguage = wpml_get_language_information($postId);
-		if (is_wp_error($postLanguage)) {
+
+		$postLanguageCode = '';
+		if (!empty($post) && !empty($post->ID)) {
+			$postLanguageCode = self::getWpmlLanguageCodeForPost($post->ID);
+		}
+		if ($postLanguageCode === '') {
+			$postLanguageCode = self::getWpmlCurrentRequestLanguageCode();
+		}
+		if ($postLanguageCode === '' || $postLanguageCode === null) {
 			return true;
 		}
-		if (!empty($_GET['lang']) && (sanitize_text_field( wp_unslash( $_GET['lang'] ) ) == $popupLanguage)) {
-            return true;
-        }
-		if ($postLanguage['language_code'] != $popupLanguage) {
+
+		if (!empty($_GET['lang']) && (sanitize_text_field(wp_unslash($_GET['lang'])) == $popupLanguage)) {
+			return true;
+		}
+		if (strtolower($postLanguageCode) != strtolower($popupLanguage)) {
 			return false;
 		}
 
@@ -645,12 +800,8 @@ class PopupChecker
 
 		$popupOptions = $args['popupOptions'];
 
-		if (!empty($popupOptions['sgpb-icl_post_language'])) {
-			$languageCompatibilty = PopupChecker::checkLanguage($popupOptions['sgpb-icl_post_language']);
-
-			if ($languageCompatibilty === false) {
-				return $languageCompatibilty;
-			}
+		if (!self::wpmlAllowsPopupFrontendLoad((int) $args['id'], $popupOptions, $args)) {
+			return false;
 		}
 
 

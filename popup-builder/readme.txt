@@ -6,9 +6,9 @@ Plugin URI: https://popup-builder.com
 Donate link: https://popup-builder.com
 Tags: popup, pop up, wordpress popup, popup maker, popup builder
 Requires at least: 4.2
-Tested up to: 6.8.3
+Tested up to: 7.0
 Requires PHP: 5.3.3
-Stable tag: 4.4.2
+Stable tag: 4.4.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -146,45 +146,52 @@ Go to the Popup Builder settings and set your desired options.
 
 == Changelog ==
 
-= Version 4.4.2
+= Version 4.4.4 =
+* Fix: Improvement of compatibility with the WPML language plugin.
+
+= Version 4.4.3 =
+* Security: Fixed a vulnerability related to predictable unsubscribe tokens.
+* Security: Improved unsubscribe token generation and validation.
+
+= Version 4.4.2 =
 * Security: avoid GET parameter serialization
 
-= Version 4.4.1
+= Version 4.4.1 =
 * Fix: Audio doesn't play on the front-end.
 * Fix: PHP 8.2+ warning errors.
 * Improve: Select Post or Page template option.
 
-= Version 4.4.0
+= Version 4.4.0 =
 * New feature: Allow to use *.webp format to create Popup with Image type.
 * Fix the PHP 8.2+ warning errors.
 
-= Version 4.3.9
+= Version 4.3.9 =
 * Optimization the Popup data loading.
 * Fix the load_textdomain warning of Wordpress version 6.7 and higher.
 
-= Version 4.3.8
+= Version 4.3.8 =
 * Fix the long page title issue.
 * Optimization the Popup Subscription Plus integration
 
-= Version 4.3.7
+= Version 4.3.7 =
 * Fix the vulnerable to Sensitive Information Exposure When import the popups.
 
-= Version 4.3.6
+= Version 4.3.6 =
 * Optimization the code for security.
 * Fix the issue with moving trash of Popup Countdown type.
 
-= Version 4.3.5
+= Version 4.3.5 =
 * Optimization the code for security.
 * Fix the vulnerability issue: Stored XSS to backdoor creation.
 * Fix the  issue of Popup admin edit screen displays wrong.
 
-= Version 4.3.4
+= Version 4.3.4 =
 * Fix the issue of Popup activates when scrolling on smartphone.
 * Fix the vulnerable to Sensitive Information Exposure.
 * New feature: Display warning about Injection Code.
 * Fix the conflict with Ninja Form and WP Forms plugins.
 
-= Version 4.3.3
+= Version 4.3.3 =
 * Fix Undefined constant "SECURE_AUTH_COOKIE".
 * Fix Code Injection.
 * Fix Vulnerability issue.

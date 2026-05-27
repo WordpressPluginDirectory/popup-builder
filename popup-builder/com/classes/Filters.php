@@ -1,5 +1,9 @@
 <?php
+
 namespace sgpb;
+
+defined( 'ABSPATH' ) || exit;
+
 use \WP_Query;
 use \SgpbPopupConfig;
 use sgpb\PopupBuilderActivePackage;
@@ -67,7 +71,11 @@ class Filters
 
 	public function linkToTranslationWpml($link, $postId, $lang, $trid)
 	{
-		if (strpos($link, SG_POPUP_POST_TYPE) && strpos($link, 'source_lang') && isset($trid)) {
+		if ( is_string($link) &&
+	        strpos($link, SG_POPUP_POST_TYPE) !== false &&
+	        strpos($link, 'source_lang') !== false &&
+	        isset($trid)
+	    ) {
 
 			$popupType = 'html';
 			$popup = SGPopup::find($postId);
@@ -585,9 +593,9 @@ class Filters
 
 	public function maybeShortenEddFilename($return, $package)
 	{
-		if (strpos($package, SG_POPUP_STORE_URL) !== false) {
-			add_filter('wp_unique_filename', array($this, 'shortenEddFilename'), 100, 2);
-		}
+		if (!empty($package) && is_string($package) && strpos($package, SG_POPUP_STORE_URL) !== false) {
+	        add_filter('wp_unique_filename', array($this, 'shortenEddFilename'), 100, 2);
+	    }
 		return $return;
 	}
 
@@ -761,10 +769,11 @@ class Filters
 		}
 		$urls = $matches[1];
 
-		foreach ($matches[0] as $key => $iframe) {
-			if (empty($urls[$key])) {
-				continue;
-			}
+		foreach ($matches[0] as $key => $iframe) {			
+
+			if (empty($urls[$key]) || !is_string($iframe)) {
+		        continue;
+		    }
 
 			$pos = strpos($iframe, $urls[$key]);
 

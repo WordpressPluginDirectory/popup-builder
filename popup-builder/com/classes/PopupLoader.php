@@ -72,7 +72,7 @@ class PopupLoader
 			}
 
 			$popupFromUrl = SGPopup::find($getterId, $args);
-			if (!empty($popupFromUrl)) {
+			if (is_object($popupFromUrl) && method_exists($popupFromUrl, 'getOptionValue')) {
 				$defaultEvent = array();
 				$customDelay = $popupFromUrl->getOptionValue('sgpb-popup-delay');
 				$defaultEvent[] = \SgpbDataConfig::websiteDefaultConfigs()['events'][0];
